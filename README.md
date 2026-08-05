@@ -17,7 +17,7 @@ Source organization: `declarative-migrations`
 
 | Source | Commit | Branch observed |
 |---|---:|---|
-| `declarative-migrations/declarative-migrations-mcp-server.rs` | `aa6c5af6b6ca38767336cadfe56905bad332dd1f` | `main` |
+| `declarative-migrations/declarative-migrations-mcp-server.rs` | `5107edacb1eadf0ec7fbcea161fe6787be440438` | `main` |
 
 ## Dependency lanes
 
