@@ -1,25 +1,48 @@
 # cli-mcp-contract
 
-CLI exit-code, flags-to-environment, JSON-plan, and guarded JSON-RPC/MCP adapter contract certification.
+    Independent **MCP contract** harness in `declarative-migrations-test` for `declarative-migrations`.
 
-This repository is part of the isolated `declarative-migrations-test` certification fleet. It pins the production implementation as a Git submodule at `declarative-migrations/declarative-postgres-migrate.rs@21eb846e356b2a5aff068b21e77903e6cca50452` and exercises real PostgreSQL and/or CockroachDB instances in GitHub Actions.
+    **Readiness:** `ready`  
+    **Primary dependency strategy:** `matrix`  
+    **Scheduled cadence:** `23 4 * * 2,5` UTC  
+    **Live infrastructure:** None for deterministic pull-request checks.
 
-## Fleet
+    ## Upstream repositories
 
-- `.github`
-- `postgres-forward-rollback`
-- `cockroach-forward-rollback`
-- `cross-engine-compatibility`
-- `concurrent-migrator-lock`
-- `failure-injection-atomicity`
-- `schema-drift-detection`
-- `cli-mcp-contract`
+    - `declarative-migrations/declarative-postgres-migrate.rs`
+- `declarative-migrations/declarative-migrations-mcp-server.rs`
 
-## Local contract
+    ## Acceptance objectives
 
-```bash
-git submodule update --init --recursive
-scripts/build-dpm.sh
-```
+    1. Verify CLI/MCP plan parity, dry-run, approval, apply, rollback, and destructive-operation safeguards across the supported happy-path states and canonical fixtures.
+2. Verify CLI/MCP plan parity, dry-run, approval, apply, rollback, and destructive-operation safeguards under retries, interruption, concurrency, offline operation, or partial failure.
+3. Verify CLI/MCP plan parity, dry-run, approval, apply, rollback, and destructive-operation safeguards preserves authorization, idempotency, integrity, observability, and actionable failure classification.
 
-Every behavior change must add a regression, preserve exact dependency pinning, avoid credentials in source or logs, and land through a pull request.
+    ## Dependency paths
+
+    This repository tests the upstream through independent installation paths:
+
+    1. `./scripts/bootstrap-upstream.sh git-submodule`
+    2. `./scripts/bootstrap-upstream.sh zed`
+    3. `./scripts/bootstrap-upstream.sh native-package`
+
+    The publisher materializes a real Git submodule when authenticated access is available. Zed and native package coordinates are recorded in `dependency-contract.yaml`; missing unpublished packages are reported as blocked readiness rather than silently skipped.
+
+    ## Check tiers
+
+    ```bash
+    python3 -m pip install -e '.[test]'
+    pytest -q
+    ./scripts/readiness.py --offline
+    ./scripts/run-live.sh
+    ```
+
+    Pull requests validate the harness and deterministic contract fixtures. Secret-, service-, emulator-, desktop-, database-, provider-, chaos-, scale-, and soak-dependent checks run by schedule or manual dispatch.
+
+    A live result must be classified as one of:
+
+    - **product regression** — a behavioral invariant fails after dependencies are ready;
+    - **blocked dependency** — an upstream, credential, package, emulator, provider sandbox, or deployment is unavailable;
+    - **harness regression** — generated metadata, fixtures, workflow, or runner setup is invalid.
+
+    Managed by `github-test-org-factory/1.0.0`.
