@@ -1,5 +1,4 @@
 import importlib.util
-import io
 import json
 import os
 import subprocess
@@ -16,20 +15,33 @@ SPEC.loader.exec_module(MCP)
 
 class McpContractTests(unittest.TestCase):
     def test_lists_exact_guarded_tools(self):
-        self.assertEqual([tool["name"] for tool in MCP.TOOLS], ["dpm_diff", "dpm_verify", "dpm_apply"])
+        self.assertEqual(
+            [tool["name"] for tool in MCP.TOOLS],
+            ["dpm_diff", "dpm_verify", "dpm_apply"],
+        )
 
     def test_apply_requires_exact_target_confirmation(self):
         with self.assertRaises(PermissionError):
             MCP.command_for(
                 "dpm_apply",
-                {"source": "source.sql", "target": "postgres://db/target", "shadow": "postgres://db/admin", "confirm_target": "postgres://db/other"},
+                {
+                    "source": "source.sql",
+                    "target": "postgres://db/target",
+                    "shadow": "postgres://db/admin",
+                    "confirm_target": "postgres://db/other",
+                },
             )
 
     def test_arguments_are_passed_without_shell_interpolation(self):
         target = "postgres://db/target;touch /tmp/should-not-exist"
         command = MCP.command_for(
             "dpm_diff",
-            {"source": "source.sql", "target": target, "shadow": "postgres://db/admin", "format": "json"},
+            {
+                "source": "source.sql",
+                "target": target,
+                "shadow": "postgres://db/admin",
+                "format": "json",
+            },
         )
         self.assertIn(target, command)
         self.assertNotIn("sh", command[:1])
@@ -37,7 +49,17 @@ class McpContractTests(unittest.TestCase):
     def test_stdio_initialize(self):
         completed = subprocess.run(
             [sys.executable, str(ROOT / "mcp" / "dpm_mcp.py")],
-            input=json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}}) + "\n",
+            input=(
+                json.dumps(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": 1,
+                        "method": "initialize",
+                        "params": {},
+                    }
+                )
+                + "\n"
+            ),
             capture_output=True,
             text=True,
             check=True,
@@ -51,6 +73,7 @@ class McpContractTests(unittest.TestCase):
         shadow = os.environ.get("DPM_REAL_SHADOW")
         if not all((dpm, target, shadow)):
             self.skipTest("real dpm smoke is not configured")
+
         previous = os.environ.get("DPM_BIN")
         os.environ["DPM_BIN"] = dpm
         try:
@@ -68,8 +91,13 @@ class McpContractTests(unittest.TestCase):
                 os.environ.pop("DPM_BIN", None)
             else:
                 os.environ["DPM_BIN"] = previous
+
+        self.assertFalse(result["isError"], result)
         self.assertEqual(result["exit_code"], 0, result)
-        json.loads(result["stdout"])
+        self.assertEqual(len(result["content"]), 1, result)
+        self.assertEqual(result["content"][0]["type"], "text", result)
+        plan = json.loads(result["content"][0]["text"])
+        self.assertIsInstance(plan, dict)
 
 
 if __name__ == "__main__":
