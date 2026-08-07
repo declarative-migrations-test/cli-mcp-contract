@@ -1,0 +1,49 @@
+schema_version: 1
+managed_by: github-test-org-factory/1.0.0
+production_org: declarative-migrations
+test_org: declarative-migrations-test
+repository: cli-mcp-contract
+kind: mcp
+readiness: ready
+objectives:
+- Verify CLI/MCP plan parity, dry-run, approval, apply, rollback, and destructive-operation safeguards across the supported
+  happy-path states and canonical fixtures.
+- Verify CLI/MCP plan parity, dry-run, approval, apply, rollback, and destructive-operation safeguards under retries,
+  interruption, concurrency, offline operation, or partial failure.
+- Verify CLI/MCP plan parity, dry-run, approval, apply, rollback, and destructive-operation safeguards preserves authorization,
+  idempotency, integrity, observability, and actionable failure classification.
+always_on_checks:
+- Validate test-plan and dependency metadata.
+- Validate generated fixture and workflow syntax.
+- Classify missing upstreams or credentials separately from product regressions.
+schedule_utc: 23 4 * * 2,5
+expensive: false
+required_infrastructure: []
+cases:
+- id: TC-001
+  title: Verify CLI/MCP plan parity, dry-run, approval, apply, rollback, and destructive-operation safeguards across
+    the supported happy-path states and canonical fixtures.
+  tier: contract-live
+  status: planned
+  evidence:
+  - junit
+  - readiness JSON
+  - workflow artifacts
+- id: TC-002
+  title: Verify CLI/MCP plan parity, dry-run, approval, apply, rollback, and destructive-operation safeguards under retries,
+    interruption, concurrency, offline operation, or partial failure.
+  tier: contract-live
+  status: planned
+  evidence:
+  - junit
+  - readiness JSON
+  - workflow artifacts
+- id: TC-003
+  title: Verify CLI/MCP plan parity, dry-run, approval, apply, rollback, and destructive-operation safeguards preserves
+    authorization, idempotency, integrity, observability, and actionable failure classification.
+  tier: contract-live
+  status: planned
+  evidence:
+  - junit
+  - readiness JSON
+  - workflow artifacts
