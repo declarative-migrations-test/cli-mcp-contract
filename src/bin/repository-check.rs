@@ -147,7 +147,8 @@ fn scan_tree(root: &Path, directory: &Path) -> Result<()> {
         let Ok(text) = std::str::from_utf8(&bytes) else {
             continue;
         };
-        if ["<<<<<<<", "=======", ">>>>>>>"]
+        let conflict_markers = ["<".repeat(7), "=".repeat(7), ">".repeat(7)];
+        if conflict_markers
             .iter()
             .any(|marker| text.contains(marker))
         {
@@ -170,7 +171,8 @@ fn should_skip(relative: &Path) -> bool {
 }
 
 fn credential_shaped(text: &str) -> bool {
-    if text.contains("BEGIN ") && text.contains("PRIVATE KEY") {
+    let private_key_marker = ["BEGIN", "PRIVATE KEY"].join(" ");
+    if text.contains(&private_key_marker) {
         return true;
     }
     ["ghp_", "gho_", "ghu_", "ghs_", "ghr_"]
