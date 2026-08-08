@@ -1,10 +1,12 @@
-name: CLI and MCP contract
+name: Rust CLI and MCP contract
 
 on:
   push:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  schedule:
+    - cron: "19 8 * * *"
 
 permissions:
   contents: read
@@ -13,10 +15,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: "1"
+  PRODUCT_SHA: a5e868acc0206fa9c3e91b5e36e0b1b111805885
+
 jobs:
   certify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 50
     services:
       postgres:
         image: postgres:17
@@ -35,35 +42,52 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
           submodules: recursive
+      - name: Validate workflow syntax
+        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667
+        with:
+          args: .github/workflows/ci.yml
       - uses: dtolnay/rust-toolchain@4be7066ada62dd38de10e7b70166bc74ed198c30
         with:
-          toolchain: stable
+          toolchain: "1.97.0"
+          components: rustfmt, clippy
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
         with:
-          workspaces: vendor/declarative-postgres-migrate.rs -> target
-      - name: Validate repository contract
-        run: python3 scripts/verify-repository.py
+          workspaces: |
+            . -> target
+            vendor/declarative-postgres-migrate.rs -> target
+      - name: Bootstrap the Rust harness lockfile
+        run: cargo generate-lockfile
+      - name: Format and strictly lint every Rust target
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --all-targets -- -D warnings
+      - name: Run unit, stdio, and compile-fail contracts
+        run: |
+          cargo test --all-targets
+          cargo test --doc
+      - name: Validate repository and immutable product pin
+        run: cargo run --bin repository-check
       - name: Install PostgreSQL client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
-      - name: Build pinned dpm
+      - name: Build the exact pinned dpm product
         id: dpm
         shell: bash
         run: echo "path=$(scripts/build-dpm.sh)" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
-        with:
-          python-version: '3.12'
-      - name: Exercise CLI and guarded JSON-RPC adapter
+      - name: Build the Rust adapter and certification binaries
+        run: cargo build --bins
+      - name: Exercise the real CLI and guarded JSON-RPC adapter
         env:
           DPM_BIN: ${{ steps.dpm.outputs.path }}
+          DPM_ADAPTER_BIN: ${{ github.workspace }}/target/debug/dpm-mcp-adapter
           POSTGRES_ADMIN_URL: postgres://postgres@localhost:5432/postgres
-        run: |
-          mkdir -p artifacts
-          scripts/test-cli.sh
-      - name: Upload contract evidence
+        run: cargo run --bin contract-certify
+      - name: Upload exact-head contract evidence and generated lockfile
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: cli-mcp-contract-evidence
-          path: artifacts
-          retention-days: 7
+          name: rust-cli-mcp-contract-evidence
+          path: |
+            artifacts
+            Cargo.lock
+          retention-days: 14
           if-no-files-found: error
