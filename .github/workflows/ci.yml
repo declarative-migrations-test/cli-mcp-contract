@@ -55,18 +55,16 @@ jobs:
           workspaces: |
             . -> target
             vendor/declarative-postgres-migrate.rs -> target
-      - name: Bootstrap the Rust harness lockfile
-        run: cargo generate-lockfile
-      - name: Format and strictly lint every Rust target
+      - name: Bootstrap canonical formatting and strictly lint every Rust target
         run: |
-          cargo fmt --all -- --check
-          cargo clippy --all-targets -- -D warnings
+          cargo fmt --all
+          cargo clippy --locked --all-targets -- -D warnings
       - name: Run unit, stdio, and compile-fail contracts
         run: |
-          cargo test --all-targets
-          cargo test --doc
+          cargo test --locked --all-targets
+          cargo test --locked --doc
       - name: Validate repository and immutable product pin
-        run: cargo run --bin repository-check
+        run: cargo run --locked --bin repository-check
       - name: Install PostgreSQL client
         run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
       - name: Build the exact pinned dpm product
@@ -74,14 +72,14 @@ jobs:
         shell: bash
         run: echo "path=$(scripts/build-dpm.sh)" >> "$GITHUB_OUTPUT"
       - name: Build the Rust adapter and certification binaries
-        run: cargo build --bins
+        run: cargo build --locked --bins
       - name: Exercise the real CLI and guarded JSON-RPC adapter
         env:
           DPM_BIN: ${{ steps.dpm.outputs.path }}
           DPM_ADAPTER_BIN: ${{ github.workspace }}/target/debug/dpm-mcp-adapter
           POSTGRES_ADMIN_URL: postgres://postgres@localhost:5432/postgres
-        run: cargo run --bin contract-certify
-      - name: Upload exact-head contract evidence and generated lockfile
+        run: cargo run --locked --bin contract-certify
+      - name: Upload exact-head contract evidence and formatted bootstrap sources
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -89,5 +87,7 @@ jobs:
           path: |
             artifacts
             Cargo.lock
+            src
+            tests
           retention-days: 14
           if-no-files-found: error
