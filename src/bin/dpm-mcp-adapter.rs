@@ -35,6 +35,8 @@ fn main() -> Result<()> {
 
 fn write_response(writer: &mut impl Write, response: &Value) -> Result<()> {
     serde_json::to_writer(&mut *writer, response).context("encoding MCP response")?;
-    writer.write_all(b"\n").context("terminating MCP response")?;
+    writer
+        .write_all(b"\n")
+        .context("terminating MCP response")?;
     writer.flush().context("flushing MCP response")
 }
