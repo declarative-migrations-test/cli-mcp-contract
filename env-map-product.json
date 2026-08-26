@@ -1,0 +1,12 @@
+{
+  "repository": "declarative-migrations/declarative-postgres-migrate.rs",
+  "ref": "grok/immutable-cli-env-map",
+  "sha": "466b970d920386bf6ac2f05687832df9c245af04",
+  "paths": [
+    "src"
+  ],
+  "forbidden": [
+    "std::env::set_var(",
+    "env::set_var("
+  ]
+}
