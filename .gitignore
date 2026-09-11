@@ -1,6 +1,5 @@
 .venv/
 .venv-consumer/
-__pycache__/
 .pytest_cache/
 artifacts/
 vendor/
@@ -15,7 +14,6 @@ build/
 target/
 artifacts/
 *.log
-__pycache__/
 tmp
 temp
 tmp/worktrees
